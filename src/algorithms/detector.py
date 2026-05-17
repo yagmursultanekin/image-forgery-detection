@@ -1,0 +1,89 @@
+"""
+Görüntü Sahteciliği Tespiti - Klasik Algoritmalar
+SIFT, SURF, AKAZE, ORB algoritmaları ile Copy-Move tespiti
+"""
+
+import cv2
+import numpy as np
+
+
+def detect_forgery(image_path, algorithm='sift'):
+    """
+    Verilen görüntüde sahtecilik tespiti yapar.
+    
+    Args:
+        image_path: Görüntü dosyasının yolu
+        algorithm: Kullanılacak algoritma (sift, surf, akaze, orb)
+    
+    Returns:
+        dict: Tespit sonuçları
+    """
+    # Görüntüyü yükle
+    image = cv2.imread(image_path)
+    if image is None:
+        return {'error': 'Görüntü yüklenemedi'}
+
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Algoritma seçimi
+    if algorithm == 'sift':
+        detector = cv2.SIFT_create()
+        algorithm_name = 'SIFT'
+    elif algorithm == 'surf':
+        try:
+            detector = cv2.xfeatures2d.SURF_create(400)
+            algorithm_name = 'SURF'
+        except:
+            return {'error': 'SURF algoritması bu sistemde desteklenmiyor'}
+    elif algorithm == 'akaze':
+        detector = cv2.AKAZE_create()
+        algorithm_name = 'AKAZE'
+    elif algorithm == 'orb':
+        detector = cv2.ORB_create(nfeatures=1000)
+        algorithm_name = 'ORB'
+    else:
+        return {'error': 'Geçersiz algoritma'}
+
+    # Anahtar noktaları ve tanımlayıcıları bul
+    keypoints, descriptors = detector.detectAndCompute(gray, None)
+
+    if descriptors is None or len(keypoints) < 10:
+        return {
+            'algorithm': algorithm_name,
+            'forged': False,
+            'confidence': 0.0,
+            'keypoints_found': len(keypoints) if keypoints else 0,
+            'matches_found': 0,
+            'message': 'Yeterli anahtar nokta bulunamadı'
+        }
+
+    # Eşleştirme yap (Copy-Move tespiti)
+    if algorithm == 'orb':
+        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
+    else:
+        bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=False)
+
+    matches = bf.knnMatch(descriptors, descriptors, k=2)
+
+    # Kendisiyle eşleşenleri filtrele
+    good_matches = []
+    for match_pair in matches:
+        if len(match_pair) == 2:
+            m, n = match_pair
+            # Aynı nokta değil ama çok yakın = kopyalanmış bölge
+            if m.distance < 0.75 * n.distance and m.queryIdx != m.trainIdx:
+                good_matches.append(m)
+
+    # Sahtecilik kararı
+    match_ratio = len(good_matches) / len(keypoints)
+    forged = len(good_matches) > 10 and match_ratio > 0.05
+    confidence = min(round(match_ratio * 100, 2), 100.0)
+
+    return {
+        'algorithm': algorithm_name,
+        'forged': forged,
+        'confidence': confidence,
+        'keypoints_found': len(keypoints),
+        'matches_found': len(good_matches),
+        'message': 'Sahtecilik tespit edildi!' if forged else 'Görüntü orijinal görünüyor'
+    }

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Görüntü Sahteciliği Tespiti</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f0f1a;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            padding: 20px 40px;
+            border-bottom: 2px solid #e94560;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            color: #e94560;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: #a0a0b0;
+            font-size: 0.95rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .upload-card {
+            background: #1a1a2e;
+            border: 2px dashed #e94560;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: border-color 0.3s;
+        }
+
+        .upload-card:hover {
+            border-color: #ff6b9d;
+        }
+
+        .upload-card h2 {
+            color: #e94560;
+            margin-bottom: 15px;
+        }
+
+        .upload-card p {
+            color: #a0a0b0;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+            margin: 5px;
+        }
+
+        .btn:hover { background: #c73652; }
+        .btn:disabled { background: #555; cursor: not-allowed; }
+
+        .btn-secondary {
+            background: #16213e;
+            border: 1px solid #e94560;
+            color: #e94560;
+        }
+
+        .btn-secondary:hover { background: #1a1a2e; }
+
+        #preview {
+            margin: 20px 0;
+            display: none;
+        }
+
+        #preview img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            border: 2px solid #e94560;
+        }
+
+        .algorithm-card {
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .algorithm-card h2 {
+            color: #e94560;
+            margin-bottom: 20px;
+        }
+
+        .algo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .algo-btn {
+            background: #16213e;
+            border: 1px solid #333;
+            color: #a0a0b0;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .algo-btn:hover, .algo-btn.active {
+            background: #e94560;
+            color: white;
+            border-color: #e94560;
+        }
+
+        .result-card {
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 30px;
+            display: none;
+        }
+
+        .result-card h2 {
+            color: #e94560;
+            margin-bottom: 20px;
+        }
+
+        .result-forged {
+            background: rgba(233, 69, 96, 0.1);
+            border: 1px solid #e94560;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .result-original {
+            background: rgba(46, 213, 115, 0.1);
+            border: 1px solid #2ed573;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .result-icon { font-size: 3rem; margin-bottom: 10px; }
+        .result-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; }
+
+        .result-details {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .detail-item {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .detail-label {
+            color: #a0a0b0;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #333;
+            border-top: 4px solid #e94560;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🔍 Görüntü Sahteciliği Tespiti</h1>
+    <p>SIFT · SURF · AKAZE · ORB · CNN · LSTM algoritmaları ile analiz</p>
+</header>
+
+<div class="container">
+
+    <!-- Görüntü Yükleme -->
+    <div class="upload-card">
+        <h2>📁 Görüntü Yükle</h2>
+        <p>PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP formatları desteklenir</p>
+        <button class="btn" onclick="document.getElementById('fileInput').click()">
+            Dosya Seç
+        </button>
+        <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.gif,.bmp,.tiff,.webp">
+        <div id="preview">
+            <img id="previewImg" src="" alt="Önizleme">
+            <p id="fileName" style="color:#a0a0b0; margin-top:10px;"></p>
+        </div>
+    </div>
+
+    <!-- Algoritma Seçimi -->
+    <div class="algorithm-card">
+        <h2>⚙️ Algoritma Seç</h2>
+        <div class="algo-grid">
+            <button class="algo-btn active" onclick="selectAlgo(this, 'sift')">SIFT</button>
+            <button class="algo-btn" onclick="selectAlgo(this, 'surf')">SURF</button>
+            <button class="algo-btn" onclick="selectAlgo(this, 'akaze')">AKAZE</button>
+            <button class="algo-btn" onclick="selectAlgo(this, 'orb')">ORB</button>
+            <button class="algo-btn" onclick="selectAlgo(this, 'cnn')">CNN (AI)</button>
+            <button class="algo-btn" onclick="selectAlgo(this, 'lstm')">LSTM (AI)</button>
+        </div>
+        <button class="btn" id="analyzeBtn" onclick="analyze()" disabled>
+            🔍 Analiz Et
+        </button>
+    </div>
+
+    <!-- Yükleniyor -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p style="color:#a0a0b0;">Analiz yapılıyor...</p>
+    </div>
+
+    <!-- Sonuç -->
+    <div class="result-card" id="resultCard">
+        <h2>📊 Analiz Sonucu</h2>
+        <div id="resultContent"></div>
+        <div class="result-details" id="resultDetails"></div>
+    </div>
+
+</div>
+
+<script>
+    let uploadedFilename = null;
+    let selectedAlgorithm = 'sift';
+
+    // Dosya seçilince önizleme göster
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('/upload', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    uploadedFilename = data.filename;
+                    document.getElementById('analyzeBtn').disabled = false;
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('previewImg').src = e.target.result;
+                        document.getElementById('fileName').textContent = file.name;
+                        document.getElementById('preview').style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('Hata: ' + data.error);
+                }
+            });
+    });
+
+    // Algoritma seç
+    function selectAlgo(btn, algo) {
+        document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedAlgorithm = algo;
+    }
+
+    // Analiz et
+    function analyze() {
+        if (!uploadedFilename) return;
+
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('resultCard').style.display = 'none';
+
+        fetch('/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                filename: uploadedFilename,
+                algorithm: selectedAlgorithm
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('loading').style.display = 'none';
+            showResult(data);
+        });
+    }
+
+    // Sonucu göster
+    function showResult(data) {
+        const card = document.getElementById('resultCard');
+        const content = document.getElementById('resultContent');
+        const details = document.getElementById('resultDetails');
+
+        if (data.error) {
+            content.innerHTML = `<div class="result-forged"><p>❌ ${data.error}</p></div>`;
+        } else if (data.forged) {
+            content.innerHTML = `
+                <div class="result-forged">
+                    <div class="result-icon">⚠️</div>
+                    <div class="result-title" style="color:#e94560;">SAHTECİLİK TESPİT EDİLDİ</div>
+                    <p>${data.message}</p>
+                </div>`;
+        } else {
+            content.innerHTML = `
+                <div class="result-original">
+                    <div class="result-icon">✅</div>
+                    <div class="result-title" style="color:#2ed573;">GÖRÜNTÜ ORİJİNAL</div>
+                    <p>${data.message}</p>
+                </div>`;
+        }
+
+        details.innerHTML = `
+            <div class="detail-item">
+                <div class="detail-label">Algoritma</div>
+                <div class="detail-value">${data.algorithm || '-'}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Güven Oranı</div>
+                <div class="detail-value">${data.confidence || 0}%</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Anahtar Nokta</div>
+                <div class="detail-value">${data.keypoints_found || '-'}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Eşleşme Sayısı</div>
+                <div class="detail-value">${data.matches_found || '-'}</div>
+            </div>`;
+
+        card.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
