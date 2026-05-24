@@ -1,0 +1,6 @@
+projectKey=image-forgery-detection
+serverUrl=http://localhost:9000
+serverVersion=26.5.0.122743
+dashboardUrl=http://localhost:9000/dashboard?id=image-forgery-detection
+ceTaskId=5cde4171-14e4-46c9-b589-ed1b6edb1bc5
+ceTaskUrl=http://localhost:9000/api/ce/task?id=5cde4171-14e4-46c9-b589-ed1b6edb1bc5

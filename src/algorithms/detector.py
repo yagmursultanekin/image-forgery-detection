@@ -1,6 +1,9 @@
 """
-Görüntü Sahteciliği Tespiti - Klasik Algoritmalar
-SIFT, SURF, AKAZE, ORB algoritmaları ile Copy-Move tespiti
+@file detector.py
+@brief Görüntü Sahteciliği Tespiti - Klasik Algoritmalar
+@details SIFT, SURF, AKAZE, ORB algoritmaları ile Copy-Move sahtecilik tespiti
+@author Yağmur Sultan Ekin
+@version 1.0
 """
 
 import cv2
@@ -9,23 +12,30 @@ import numpy as np
 
 def detect_forgery(image_path, algorithm='sift'):
     """
-    Verilen görüntüde sahtecilik tespiti yapar.
+    @brief Verilen görüntüde sahtecilik tespiti yapar.
+    @details Bu fonksiyon SIFT, SURF, AKAZE veya ORB algoritmalarından birini
+             kullanarak görüntüdeki Copy-Move sahteciliğini tespit eder.
+             Anahtar nokta eşleştirme yöntemi kullanılır.
     
-    Args:
-        image_path: Görüntü dosyasının yolu
-        algorithm: Kullanılacak algoritma (sift, surf, akaze, orb)
+    @param image_path Görüntü dosyasının yolu (string)
+    @param algorithm Kullanılacak algoritma: 'sift', 'surf', 'akaze', 'orb'
     
-    Returns:
-        dict: Tespit sonuçları
+    @return dict Tespit sonuçlarını içeren sözlük:
+            - algorithm: Kullanılan algoritma adı
+            - forged: Sahtecilik tespit edildi mi (bool)
+            - confidence: Güven oranı (float)
+            - keypoints_found: Bulunan anahtar nokta sayısı (int)
+            - matches_found: Eşleşme sayısı (int)
+            - message: Sonuç mesajı (string)
+    
+    @note SURF algoritması patentli olduğundan bazı sistemlerde çalışmayabilir.
     """
-    # Görüntüyü yükle
     image = cv2.imread(image_path)
     if image is None:
         return {'error': 'Görüntü yüklenemedi'}
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    # Algoritma seçimi
     if algorithm == 'sift':
         detector = cv2.SIFT_create()
         algorithm_name = 'SIFT'
@@ -44,7 +54,6 @@ def detect_forgery(image_path, algorithm='sift'):
     else:
         return {'error': 'Geçersiz algoritma'}
 
-    # Anahtar noktaları ve tanımlayıcıları bul
     keypoints, descriptors = detector.detectAndCompute(gray, None)
 
     if descriptors is None or len(keypoints) < 10:
@@ -57,7 +66,6 @@ def detect_forgery(image_path, algorithm='sift'):
             'message': 'Yeterli anahtar nokta bulunamadı'
         }
 
-    # Eşleştirme yap (Copy-Move tespiti)
     if algorithm == 'orb':
         bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
     else:
@@ -65,16 +73,13 @@ def detect_forgery(image_path, algorithm='sift'):
 
     matches = bf.knnMatch(descriptors, descriptors, k=2)
 
-    # Kendisiyle eşleşenleri filtrele
     good_matches = []
     for match_pair in matches:
         if len(match_pair) == 2:
             m, n = match_pair
-            # Aynı nokta değil ama çok yakın = kopyalanmış bölge
             if m.distance < 0.75 * n.distance and m.queryIdx != m.trainIdx:
                 good_matches.append(m)
 
-    # Sahtecilik kararı
     match_ratio = len(good_matches) / len(keypoints)
     forged = len(good_matches) > 10 and match_ratio > 0.05
     confidence = min(round(match_ratio * 100, 2), 100.0)
