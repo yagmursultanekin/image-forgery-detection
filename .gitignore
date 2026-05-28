@@ -217,3 +217,26 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 docs/
+# =========================
+# PROJEYE ÖZEL (IMAGE FORGERY)
+# =========================
+
+# 1. Veri Setleri
+dataset/
+data/
+*.zip
+*.tar.gz
+
+# 2. Eğitilmiş Yapay Zeka Modelleri (Büyük boyutlu dosyalar)
+models/
+*.keras
+*.h5
+*.pb
+
+# 3. Web Arayüzü Yüklemeleri (Klasör yapısı kalsın, içindekiler gitsin)
+static/uploads/*
+!static/uploads/.gitkeep
+
+# 4. Doxygen Otomatik Üretimleri (Sadece kodlar ve final PDF'i kalsın)
+html/
+latex/

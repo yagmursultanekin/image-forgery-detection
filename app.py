@@ -68,12 +68,16 @@ def analyze():
     if not os.path.exists(filepath):
         return jsonify({'error': 'Dosya bulunamadı'}), 404
 
+    # GÜNCELLENEN KISIM: 
+    # Geleneksel ve AI algoritmaları artık aynı dosyadan (ai_detector.py) çekiliyor
     if algorithm in ['sift', 'surf', 'akaze', 'orb']:
-        from src.algorithms.detector import detect_forgery
-        result = detect_forgery(filepath, algorithm)
+        from src.ai_models.ai_detector import feature_based_detect
+        result = feature_based_detect(filepath, algorithm)
+        
     elif algorithm in ['cnn', 'lstm']:
         from src.ai_models.ai_detector import ai_detect
         result = ai_detect(filepath, algorithm)
+        
     else:
         return jsonify({'error': 'Geçersiz algoritma'}), 400
 

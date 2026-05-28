@@ -82,8 +82,13 @@ def detect_forgery(image_path, algorithm='sift'):
 
     match_ratio = len(good_matches) / len(keypoints)
     forged = len(good_matches) > 10 and match_ratio > 0.05
-    confidence = min(round(match_ratio * 100, 2), 100.0)
-
+    
+    # Eğer sahteyse güven oranı eşleşme oranına göre belirlensin
+    if forged:
+        confidence = min(round(match_ratio * 100, 2), 100.0)
+    else:
+        # Eğer orijinalse, ne kadar az eşleşme varsa o kadar güvenlidir
+        confidence = 100.0 - min(round(match_ratio * 100, 2), 100.0)
     return {
         'algorithm': algorithm_name,
         'forged': forged,
