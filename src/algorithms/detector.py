@@ -3,7 +3,7 @@
 @brief Görüntü Sahteciliği Tespiti - Klasik Algoritmalar
 @details SIFT, SURF, AKAZE, ORB algoritmaları ile Copy-Move sahtecilik tespiti
 @author Yağmur Sultan Ekin
-@version 1.0
+@version 1.1
 """
 
 import cv2
@@ -16,10 +16,10 @@ def detect_forgery(image_path, algorithm='sift'):
     @details Bu fonksiyon SIFT, SURF, AKAZE veya ORB algoritmalarından birini
              kullanarak görüntüdeki Copy-Move sahteciliğini tespit eder.
              Anahtar nokta eşleştirme yöntemi kullanılır.
-    
+
     @param image_path Görüntü dosyasının yolu (string)
     @param algorithm Kullanılacak algoritma: 'sift', 'surf', 'akaze', 'orb'
-    
+
     @return dict Tespit sonuçlarını içeren sözlük:
             - algorithm: Kullanılan algoritma adı
             - forged: Sahtecilik tespit edildi mi (bool)
@@ -27,7 +27,7 @@ def detect_forgery(image_path, algorithm='sift'):
             - keypoints_found: Bulunan anahtar nokta sayısı (int)
             - matches_found: Eşleşme sayısı (int)
             - message: Sonuç mesajı (string)
-    
+
     @note SURF algoritması patentli olduğundan bazı sistemlerde çalışmayabilir.
     """
     image = cv2.imread(image_path)
@@ -77,23 +77,37 @@ def detect_forgery(image_path, algorithm='sift'):
     for match_pair in matches:
         if len(match_pair) == 2:
             m, n = match_pair
+            # queryIdx != trainIdx: kendisiyle eşleşmeyi engelle
             if m.distance < 0.75 * n.distance and m.queryIdx != m.trainIdx:
                 good_matches.append(m)
 
-    match_ratio = len(good_matches) / len(keypoints)
-    forged = len(good_matches) > 10 and match_ratio > 0.05
-    
-    # Eğer sahteyse güven oranı eşleşme oranına göre belirlensin
+    num_keypoints = len(keypoints)
+    num_matches = len(good_matches)
+    match_ratio = num_matches / num_keypoints  # 0.0 - 1.0 arası
+
+    # Sahtecilik kararı: hem mutlak eşleşme sayısı hem oran yüksek olmalı
+    forged = num_matches > 10 and match_ratio > 0.05
+
     if forged:
-        confidence = min(round(match_ratio * 100, 2), 100.0)
+        # Sahte: eşleşme oranı arttıkça güven artar, max %95
+        # match_ratio 0.05 → ~%30, 0.5 → ~%95
+        raw = match_ratio * 180
+        confidence = min(round(raw, 2), 95.0)
+        confidence = max(confidence, 30.0)
     else:
-        # Eğer orijinalse, ne kadar az eşleşme varsa o kadar güvenlidir
-        confidence = 100.0 - min(round(match_ratio * 100, 2), 100.0)
+        # Orijinal: az eşleşme = daha güvenilir
+        # match_ratio 0.00 → %90, 0.04 → ~%60, 0.05 eşiğine yaklaştıkça düşer
+        raw = 90.0 - (match_ratio * 600)
+        confidence = min(round(raw, 2), 90.0)
+        confidence = max(confidence, 30.0)
+
+        print(f"DEBUG - keypoints: {num_keypoints}, matches: {num_matches}, ratio: {match_ratio:.4f}, forged: {forged}, confidence: {confidence}")
+
     return {
         'algorithm': algorithm_name,
         'forged': forged,
         'confidence': confidence,
-        'keypoints_found': len(keypoints),
-        'matches_found': len(good_matches),
+        'keypoints_found': num_keypoints,
+        'matches_found': num_matches,
         'message': 'Sahtecilik tespit edildi!' if forged else 'Görüntü orijinal görünüyor'
     }

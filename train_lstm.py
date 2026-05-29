@@ -8,7 +8,7 @@ import tensorflow as tf
 DATASET_DIR = "dataset"
 MODEL_SAVE_DIR = "models"
 BATCH_SIZE = 32
-IMG_SIZE = (128, 128)
+IMG_SIZE = (256, 256)
 EPOCHS = 50
 SEQ_LENGTH = 16  # Her görüntü 16 parçaya bölünür (satır satır sequence)
 

@@ -18,7 +18,7 @@ from keras import layers, models
 
 def build_cnn_model():
     model = keras.Sequential([
-        layers.Input(shape=(128, 128, 3)),
+        layers.Input(shape=(256, 256, 3)),
         layers.Conv2D(32, (3, 3), activation='relu'),
         layers.MaxPooling2D(2, 2),
         layers.Conv2D(64, (3, 3), activation='relu'),
@@ -35,8 +35,8 @@ def build_cnn_model():
 
 def build_lstm_model():
     model = models.Sequential([
-        layers.Input(shape=(128, 128, 3)),
-        layers.Reshape((128, 128 * 3)),
+        layers.Input(shape=(256, 256, 3)),
+        layers.Reshape((256, 256 * 3)),
         layers.LSTM(128, return_sequences=True),
         layers.Dropout(0.3),
         layers.LSTM(64, return_sequences=False),
@@ -52,7 +52,7 @@ def preprocess_image_cnn(image_path):
     image = cv2.imread(image_path)
     if image is None: return None
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    image = cv2.resize(image, (128, 128))
+    image = cv2.resize(image, (256, 256))
     image = image.astype('float32') / 255.0
     image = np.expand_dims(image, axis=0)
     return image
@@ -61,7 +61,7 @@ def preprocess_image_lstm(image_path):
     image = cv2.imread(image_path)
     if image is None: return None
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    image = cv2.resize(image, (128, 128))
+    image = cv2.resize(image, (256, 256))
     image = image.astype('float32') / 255.0
     image = np.expand_dims(image, axis=0)
     return image
